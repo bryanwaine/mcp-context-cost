@@ -88,18 +88,32 @@ tokenizer: "o200k_base (approximate; not Anthropic's tokenizer)";
 
 Do not silently present these numbers as exact anywhere in the UI.
 
-## Rules to implement in v1
+## Measurement pass
 
-| id                          | flags                                                                 |
-| --------------------------- | --------------------------------------------------------------------- |
-| `token-cost`                | Tokens per tool and server total. Always reported, never a "problem". |
-| `missing-description`       | Tool or parameter has no description.                                 |
-| `description-restates-name` | Description adds nothing beyond the name.                             |
-| `large-enum`                | An enum with more than 20 values.                                     |
-| `deep-nesting`              | Schema object nesting deeper than 3 levels.                           |
-| `tool-overlap`              | Two tools in the same server with trigram similarity > 0.6.           |
+Always runs, always reports, never produces findings. Output lands on `Report`:
 
-Stop at these six. Do not add more without asking.
+- tokens per tool
+- server total
+- tokens per tool, averaged
+- percentage of a 200k context window
+
+These are facts about the server, not problems with it. A server can be
+expensive and well-authored at the same time. Reporting cost as a "finding"
+would imply otherwise.
+
+## Rules
+
+Fire only on problems. Each returns findings or an empty array.
+
+| id                          | flags |
+|-----------------------------|-------|
+| `missing-description`       | Tool or parameter has no description. |
+| `description-restates-name` | Description adds nothing beyond the name. |
+| `large-enum`               | An enum with more than 20 values. |
+| `deep-nesting`             | Schema object nesting deeper than 3 levels. |
+| `tool-overlap`             | Two tools in the same server with trigram similarity > 0.6. |
+
+Stop at these five. Do not add more without asking.
 
 ## Commands
 
