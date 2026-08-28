@@ -1,0 +1,9 @@
+{
+  "name": "@mcp-context-cost/analyzer",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "gpt-tokenizer": "^4.0.0"
+  }
+}
