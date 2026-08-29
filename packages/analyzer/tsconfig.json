@@ -4,8 +4,9 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "types": [],
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["src"]
+  "include": ["src", "fixtures"]
 }

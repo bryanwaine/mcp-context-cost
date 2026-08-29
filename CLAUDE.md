@@ -61,6 +61,13 @@ apps/web/              Next.js. Reads data/servers/ at build time.
 
    Rules destructure what they need. `ToolDef` is never extended with derived
    data — it stays exactly the shape the server returned (see rule 5).
+
+   `countTokens` is injected rather than imported by rules so that rule unit
+   tests can pass a stub — `countTokens: () => 340` — and assert the rule's
+   logic without running a real tokenizer. With a direct import, every rule test
+   would depend on gpt-tokenizer's actual output, and a failing test could not
+   tell you whether the rule or the tokenizer was wrong. Rules must never import
+   from `tokenize.ts` directly.
 3. Write the test first for every analyzer rule, using `fixtures/synthetic/` only. Do not write the
    implementation until the test exists and fails. Each synthetic
    fixture pairs the pathology with a clean control so the test asserts both a

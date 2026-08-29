@@ -6,4 +6,4 @@ const { tools } = JSON.parse(
   readFileSync("packages/analyzer/fixtures/real/filesystem.json", "utf8")
 );
 
-console.log(JSON.stringify(analyze(tools), null, 2).slice(0, 600));
+console.log(JSON.stringify(analyze(tools), null, 2).slice(0));
