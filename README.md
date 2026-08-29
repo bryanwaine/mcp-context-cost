@@ -144,7 +144,7 @@ Early. Three servers measured, analyzer under construction.
 
 - [x] Capture pipeline (`scripts/capture.ts`)
 - [x] Token counting validated against real fixtures
-- [ ] Analyzer rules
+- [x] Analyzer rules
 - [ ] Static site
 - [ ] Anthropic tokenizer error margin
 - [ ] GitHub capture
