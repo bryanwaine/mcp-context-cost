@@ -15,9 +15,9 @@ Three servers, captured directly from their `tools/list` response:
 
 | Server | Tools | Total tokens | Tokens per tool |
 |---|---:|---:|---:|
-| `@playwright/mcp` | 24 | 4,005 | 167 |
-| `@modelcontextprotocol/server-filesystem` | 14 | 2,793 | 200 |
-| `@upstash/context7-mcp` | 2 | 1,050 | **525** |
+| `@playwright/mcp` | 24 | 4,007 | 167 |
+| `@modelcontextprotocol/server-filesystem` | 14 | 2,795 | 200 |
+| `@upstash/context7-mcp` | 2 | 1,052 | **525** |
 
 Connect all three and you have spent 7,848 tokens — about 3.9% of a 200k
 context window — before the model reads a single line of your actual problem.
@@ -66,9 +66,20 @@ either one alone.
 Fundamentally, the numbers are the core deliverable.
 
 **Metric** **-** For each tool returned by `tools/list`, the token count of
-`JSON.stringify({ name, description, inputSchema })` is captured. This approximates what a
-host actually sends to the model. It excludes per-request framing overhead added
-by the host, so real-world cost is somewhat higher than reported here.
+`JSON.stringify` applied to the complete tool object exactly as the server
+returned it — including `title`, `outputSchema`, `annotations`, and any other
+fields present.
+
+Error runs in both directions. Hosts add per-request framing around the tool
+list that is not counted here, which makes real cost higher than reported. But
+not every captured field necessarily reaches the model — `icons` is display
+metadata and `_meta` is transport-level — so some of what is counted may never
+be sent, which makes real cost lower. Neither has been quantified yet.
+
+Counting the whole object is deliberate. Anyone can recompute these numbers from
+the committed fixtures. A filtered count would require defending a per-field
+judgment about what hosts forward, which is not currently documented anywhere
+authoritative.
 
 **Tokenizer** **-** `gpt-tokenizer` with the `o200k_base` encoding. This is
 OpenAI's tokenizer, **not Anthropic's.** The figures are approximations and are

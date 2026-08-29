@@ -47,9 +47,20 @@ apps/web/              Next.js. Reads data/servers/ at build time.
 1. `packages/analyzer` must never import `fs`, `node:*`, or make a network call.
    It is bundled into the browser. Anything needing I/O belongs in `scripts/` or
    in a Next.js build-time function.
-2. Every check is a pure function `(tools: ToolDef[]) => Finding[]`, exported from
-   its own file in `src/rules/`, and registered in one array in `src/rules/index.ts`.
-   Adding a rule must not require editing anything else.
+2. Every rule is a pure function `(ctx: RuleContext) => Finding[]`, exported from
+   its own file in `src/rules/`, and registered in one array in
+   `src/rules/index.ts`. Adding a rule must not require editing anything else.
+
+   ```ts
+   interface RuleContext {
+     tools: readonly ToolDef[];               // exactly as returned by tools/list
+     measurements: Measurements;              // output of the measurement pass
+     countTokens: (value: unknown) => number; // injected; rules never import a tokenizer
+   }
+   ```
+
+   Rules destructure what they need. `ToolDef` is never extended with derived
+   data — it stays exactly the shape the server returned (see rule 5).
 3. Write the test first for every analyzer rule, using `fixtures/synthetic/` only. Do not write the
    implementation until the test exists and fails. Each synthetic
    fixture pairs the pathology with a clean control so the test asserts both a
@@ -76,17 +87,27 @@ A tool definition as returned by `tools/list` looks like:
 }
 ```
 
-Token cost for one tool is the token count of `JSON.stringify` of that object.
-This approximates what a host actually sends to the model but is not exact, and
-`gpt-tokenizer` uses OpenAI's `o200k_base` encoding, which is not Anthropic's
-tokenizer. Both approximations are acceptable for v1 and both must be stated in
-the report output and in the README:
+Token cost for one tool is the token count of `JSON.stringify` of the **entire
+tool object exactly as returned by `tools/list`**, including `title`,
+`outputSchema`, `annotations`, `execution`, `icons`, and `_meta` when present.
+`ToolDef` mirrors the SDK's `Tool` shape structurally.
+
+Two approximations, both acceptable for v1, both of which must surface in the UI:
+
+1. Hosts may not forward every field to the model. `icons` is display metadata
+   and `_meta` is transport-level, so real model-facing cost is plausibly lower
+   than reported. Counting everything the server returned is chosen because it is
+   reproducible from the committed fixture; excluding fields would require
+   defending a judgment call per field.
+2. `gpt-tokenizer` uses OpenAI's `o200k_base` encoding, which is not Anthropic's
+   tokenizer.
 
 ```ts
-tokenizer: "o200k_base (approximate; not Anthropic's tokenizer)";
+export const TOKENIZER: TokenizerInfo = { id: "o200k_base", approximate: true };
 ```
 
-Do not silently present these numbers as exact anywhere in the UI.
+The UI composes the caveat sentence from this object. Never present these numbers
+as exact.
 
 ## Measurement pass
 
@@ -95,11 +116,19 @@ Always runs, always reports, never produces findings. Output lands on `Report`:
 - tokens per tool
 - server total
 - tokens per tool, averaged
-- percentage of a 200k context window
+- context window size in tokens (200,000), stored raw so the UI can compute the
+  percentage. The analyzer never stores a percentage: window size varies by model
+  and is not a property of the server being measured.
 
 These are facts about the server, not problems with it. A server can be
 expensive and well-authored at the same time. Reporting cost as a "finding"
 would imply otherwise.
+
+`serverTotalTokens` is measured in one pass over the full tools array. Never sum
+it from `perTool`. Joining boundaries (array brackets, commas between objects)
+tokenize differently when adjacent to neighbouring content than when each tool is
+tokenized in isolation, so the two differ. Measured on `filesystem.json`: 2,795
+single-pass, 2,793 summed. The single-pass figure is what a host actually sends.
 
 ## Rules
 
