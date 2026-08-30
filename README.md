@@ -68,7 +68,7 @@ Fundamentally, the numbers are the core deliverable.
 **Metric** **-** For each tool returned by `tools/list`, the token count of
 `JSON.stringify` applied to the complete tool object exactly as the server
 returned it — including `title`, `outputSchema`, `annotations`, and any other
-fields present.
+fields present. This includes fields you might not expect: the captured filesystem server, for instance, carries a `$schema` key inside each tool's `inputSchema`, and that is counted too.
 
 Error runs in both directions. Hosts add per-request framing around the tool
 list that is not counted here, which makes real cost higher than reported. But
@@ -81,19 +81,46 @@ the committed fixtures. A filtered count would require defending a per-field
 judgment about what hosts forward, which is not currently documented anywhere
 authoritative.
 
-**Tokenizer** **-** `gpt-tokenizer` with the `o200k_base` encoding. This is
-OpenAI's tokenizer, **not Anthropic's.** The figures are approximations and are
-labelled as such everywhere they appear. Anthropic's `count_tokens` endpoint will
-be used to publish an error margin.
+**Tokenizer** **-** `gpt-tokenizer` with the `o200k_base` encoding. This is OpenAI's tokenizer, **not Anthropic's.** The figures are approximations and are labelled as such everywhere they appear. Anthropic's `count_tokens` endpoint will be used to publish an error margin.
 
-**Data sources** **-** Captured from live servers via
-`scripts/capture.ts` and committed verbatim to `packages/analyzer/fixtures/real/`.
-Nothing is generated at request time. The raw JSON is in the repository, so any
-number here can be recomputed independently.
+**Data sources** **-** Captured from live servers via `scripts/capture.ts` and committed verbatim to `packages/analyzer/fixtures/real/`. Nothing is generated at request time. The raw JSON is in the repository, so any number here can be recomputed independently.
 
-**Coverage** **-** Comprehensive coverage is fundamentally unattainable. Servers requiring authentication, or
-distributed only as containers, are harder to capture. The site reports how many
-servers have been measured, but never implies it covers the ecosystem.
+**Coverage** **-** Comprehensive coverage is fundamentally unattainable. Servers requiring authentication, or distributed only as containers, are harder to capture. The site reports how many servers have been measured, but never implies it covers the ecosystem.
+
+---
+
+## Limitations of the overlap rule
+
+`tool-overlap` compares tool names using Sørensen–Dice similarity over
+character trigrams, flagging pairs above 0.6. Run against the filesystem
+server, it produces two correct findings, one false positive, and one miss:
+
+| Pair | Score | Verdict |
+|---|---:|---|
+| `list_directory` / `list_directory_with_sizes` | 0.686 | correct |
+| `read_file` / `read_text_file` | 0.632 | correct |
+| `create_directory` / `list_directory` | 0.615 | **false positive** |
+| `list_directory` / `directory_tree` | 0.583 | **miss** |
+
+The false positive scores higher than the miss. That is not a threshold that
+needs tuning — no value separates these four correctly, because the metric
+measures shared characters rather than shared purpose. `create_directory` and
+`list_directory` are opposite operations that share nine characters of
+suffix; `list_directory` and `directory_tree` are the same operation, and
+share the same nine characters, but positioned differently within each name.
+Trigram similarity cannot tell those cases apart.
+
+The rule also detects less than it might appear to. The filesystem server has
+four tools that all read a file, but only one of those six pairs clears the
+threshold — `read_media_file` and `read_multiple_files` carry enough unshared
+trigrams to fall below it.
+
+All four cases above are pinned as assertions, including the false positive
+and the miss, so a future change to the metric or threshold has to confront
+them rather than quietly move past.
+
+Comparing descriptions or embeddings instead of names would address this. That
+is a v2 change, not a tuning change.
 
 ---
 
@@ -172,4 +199,3 @@ The repo is ESM (`"type": "module"` at the root). Config files must use
 `packages/analyzer` is pure TypeScript with no I/O — it is bundled into the
 browser. Anything touching the filesystem or network belongs in `scripts/`.
 
-MIT.
