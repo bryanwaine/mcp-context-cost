@@ -99,14 +99,14 @@ Either result is worth more than a number measured after the answer was known. T
 
 ---
 
-## Key exclusions
+## Similar tools
 
 Existing solutions to a similar problem:
 
 - **[mcp-checkup](https://github.com/yifanyifan897645/mcp-checkup)** — grades the servers in your local config, detects duplicates, emits an optimization report.
-- **[mcp-tool-card-linter](https://github.com/inostarlin-passion/MCP-Tool-Card-Linter)** — a CI quality gate for server authors, with security checks for tool poisoning.
 
-Both are excellent, and both are **post-install**: you point them at a server you have already decided to use.
+
+It is an excellent tool and it is **post-install**: you point it at a server you have already decided to use.
 
 This project is **pre-install**. No installation, no local config, no CLI. You look a server up the way you look up a package on Bundlephobia, before committing
 to it.
@@ -146,3 +146,7 @@ The repo is ESM (`"type": "module"` at the root). Config files must use
 
 `packages/analyzer` is pure TypeScript with no I/O — it is bundled into the browser. Anything touching the filesystem or network belongs in `scripts/`.
 
+---
+
+## License
+MIT.
