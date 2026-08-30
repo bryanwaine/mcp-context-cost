@@ -82,6 +82,62 @@ Comparing descriptions or embeddings instead of names would address this. That i
 
 ---
 
+## A rule that was specified, measured, and cut
+
+`deep-nesting` was in the original rule set: flag tool schemas nested more
+than three levels deep, on the theory that deeply nested arguments are harder
+for a model to construct correctly.
+
+Before implementing it, the depth of every tool across all three captured
+servers was measured. Items hops are excluded, so an array of objects counts
+as one level rather than two:
+
+| Depth | Tools |
+|---:|---:|
+| 0 (no parameters) | 3 |
+| 1 | 32 |
+| 2 | 2 |
+| 3+ | 0 |
+
+37 tools. The deepest schemas in the set are `browser_fill_form`
+(`fields.items.element`) and `edit_file` (`edits.items.oldText`), both at
+depth 2. Nothing reaches 3.
+
+MCP tool schemas, at least in these three servers, are essentially flat: an
+object of scalars, occasionally an array of small objects. There is no
+distribution here to draw a threshold through, so any value would have been
+arbitrary and the rule would have reported zero findings on every server
+indexed.
+
+It was cut rather than shipped inert. If a future capture shows deeper
+schemas, the measurement is here to revisit.
+
+The remaining four rules are `missing-description`, `description-restates-name`,
+`large-enum`, and `tool-overlap`.
+
+---
+
+### Why `large-enum` was kept
+
+`large-enum` fires above 20 values. The largest enum across the three captured
+servers is 5 (`browser_fill_form.fields.items.type`); seven of the eight enums
+found sit between 2 and 5, and one server has none at all. So this threshold is
+untested against real data and provisional, in exactly the way
+`deep-nesting`'s was.
+
+It was kept because the two distributions differ in kind. Schema depth showed no
+tail at all — 34 of 37 tools at depth 0 or 1, nothing above 2 — and there is no
+reason to expect deeper ones, since MCP arguments are function parameters and
+functions rarely take deeply nested structures. Enum size plausibly does have a
+tail: a server exposing currencies, timezones, locales, or model names would
+carry dozens of values in a single enum. None has been captured yet.
+
+The rule reports zero findings on every server currently indexed. That is pinned
+as an assertion, so the first server that trips it shows up as a deliberate
+change rather than passing unnoticed.
+
+---
+
 ## An open prediction
 
 Recorded before measuring, so it can be wrong.
