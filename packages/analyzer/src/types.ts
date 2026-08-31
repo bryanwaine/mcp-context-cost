@@ -65,7 +65,8 @@ export interface Measurements {
 export type RuleId =
   | "missing-description"
   | "large-enum"
-  | "tool-overlap";
+  | "tool-overlap"
+  | "deep-nesting";
 
 export type RuleScope = "tool" | "server";
 
@@ -77,7 +78,7 @@ export interface Finding {
   ruleId: RuleId;
   toolNames: string[]; // length 1 for every rule except tool-overlap, length 2 for tool-overlap
   path?: SchemaPath;
-  // Threshold rules (large-enum, tool-overlap) populate measured/threshold:
+  // Threshold rules (large-enum, tool-overlap, deep-nesting) populate measured/threshold:
   // the value that crossed the line, and the line it crossed, same unit.
   // missing-description is about absence, not a threshold crossing, and
   // omits both.

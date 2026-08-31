@@ -2,7 +2,7 @@ import { encode } from "gpt-tokenizer";
 import { readFileSync } from "node:fs";
 
 const { tools } = JSON.parse(
-  readFileSync("packages/analyzer/fixtures/real/context7.json", "utf8"),
+  readFileSync("packages/analyzer/fixtures/real/questdb.json", "utf8"),
 );
 
 let total = 0;

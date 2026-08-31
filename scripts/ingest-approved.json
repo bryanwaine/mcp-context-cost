@@ -1,0 +1,16 @@
+[
+  { "name": "antv-chart", "identifier": "@antv/mcp-server-chart", "version": "latest" },
+  { "name": "chrome-devtools", "identifier": "chrome-devtools-mcp", "version": "latest" },
+  { "name": "mongodb", "identifier": "mongodb-mcp-server", "version": "latest" },
+  { "name": "firecrawl", "identifier": "firecrawl-mcp", "version": "latest" },
+  { "name": "perplexity", "identifier": "@perplexity-ai/mcp-server", "version": "latest" },
+  { "name": "questdb", "identifier": "@questdb/mcp-server-questdb", "version": "latest" },
+  { "name": "railway", "identifier": "@railway/mcp-server", "version": "latest" },
+  { "name": "goreleaser", "identifier": "@goreleaser/mcp", "version": "latest" },
+  { "name": "dbhub", "identifier": "@bytebase/dbhub", "version": "latest" },
+  { "name": "discourse", "identifier": "@discourse/mcp", "version": "latest" },
+  { "name": "next-devtools", "identifier": "next-devtools-mcp", "version": "latest" },
+  { "name": "mapbox-docs", "identifier": "@mapbox/mcp-docs-server", "version": "latest" },
+  { "name": "playwright", "identifier": "@playwright/mcp", "version": "latest" },
+  { "name": "nonexistent-package-test", "identifier": "@notreal/does-not-exist-xyz", "version": "latest" }
+]

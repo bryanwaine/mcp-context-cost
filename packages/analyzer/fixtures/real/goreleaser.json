@@ -1,0 +1,39 @@
+{
+  "tools": [
+    {
+      "name": "check",
+      "description": "Checks a GoReleaser configuration for errors or deprecations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "configuration": {
+            "type": "string",
+            "description": "Path to the goreleaser YAML configuration file. If empty will use the default."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "filepath": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "filepath"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "ttlMs": 0,
+  "cacheScope": "public"
+}

@@ -36,11 +36,15 @@ packages/analyzer/     Pure TypeScript. No I/O. Runs in the browser.
   src/rules/           One file per rule.
   src/index.ts         analyze(tools: ToolDef[]): Report
   fixtures/synthetic   Hand-written. One file per rule: the pathology plus a clean control. Used by rule unit tests.
-  fixtures/real        Captured from live servers by scripts/capture.ts. Snapshot tests and site content only. Never rule unit tests.
-scripts/ingest.ts      Run manually. Connects to servers, writes data/servers/*.json
-data/servers/          Committed JSON. Generated, but checked in on purpose.
-apps/web/              Next.js. Reads data/servers/ at build time.
+  fixtures/real        Captured from live servers by scripts/capture.ts or scripts/ingest-capture.ts. Committed. Snapshot tests and site content only. Never rule unit tests.
+scripts/capture.ts           Run manually. Captures one named server by command line.
+scripts/ingest-discover.ts   Run manually. Queries the MCP registry, writes data/registry-candidates.json (gitignored, regenerated each run).
+scripts/ingest-approved.json Committed. Hand-edited list of registry candidates approved for capture — the only way scripts/ingest-capture.ts is allowed to run npx against a package.
+scripts/ingest-capture.ts    Run manually. Captures only servers listed in scripts/ingest-approved.json, writes packages/analyzer/fixtures/real/*.json
+apps/web/                    NOT YET CREATED. Next.js. Will read packages/analyzer/fixtures/real/ at build time.
 ```
+
+Everything above exists except `apps/web/`, which is the remaining piece of work.
 
 ## Hard rules
 
@@ -68,19 +72,36 @@ apps/web/              Next.js. Reads data/servers/ at build time.
    would depend on gpt-tokenizer's actual output, and a failing test could not
    tell you whether the rule or the tokenizer was wrong. Rules must never import
    from `tokenize.ts` directly.
-3. Write the test first for every analyzer rule, using `fixtures/synthetic/` only. Do not write the
-   implementation until the test exists and fails. Each synthetic
+3. Write the test first for every analyzer rule, using `fixtures/synthetic/` only.
+   Do not write the implementation until the test exists and fails. Each synthetic
    fixture pairs the pathology with a clean control so the test asserts both a
-   positive and a negative case. Do not write the implementation until the test
-   exists and fails.
+   positive and a negative case.
+
+   Real captures in `fixtures/real/` are used for measurement tests and for
+   separate `*.real.test.ts` files that pin a rule's behaviour against live data.
+   They are never used for rule unit tests: a real server may contain none of the
+   pathology a rule looks for, and a rule tested only against it can pass
+   vacuously.
+
+   Numbers pinned in a `*.real.test.ts` must come from running the rule and
+   reading the output, never from the README or from a previous plan. Quote the
+   run in a comment above the assertions.
 4. Never invent a method name on `@modelcontextprotocol/sdk`, and never invent a
    registry API endpoint or response shape. Read the type definitions in
    `node_modules/@modelcontextprotocol/sdk`, or ask me to paste the relevant docs.
    A guessed endpoint that returns 404 at 2am is the main way this project fails.
-5. Keep `data/servers/*.json` exactly as returned by the server. Do not reformat,
-   sort, or strip fields during ingest. Normalisation happens in the analyzer.
+5. Keep `packages/analyzer/fixtures/real/*.json` exactly as returned by the
+   server. Do not reformat, sort, or strip fields during capture. Normalisation
+   happens in the analyzer.
 6. The repo is ESM (`"type": "module"` at root). All config files must use
    `export default`, or be named `.cjs`. Never write `module.exports` in a `.js` file.
+7. Never merge `process.env` into a spawned third-party process. Pass only
+   explicitly supplied variables and let the SDK apply its safe defaults.
+   The parent environment may contain credentials.
+8. Never create scratch, temporary, or `_`-prefixed files in the repo.
+   Verification belongs in tests. If a check is worth running once, it is worth
+   running on every `npm test`. Throwaway scripts go in the session scratchpad
+   outside the repo.
 
 ## Domain notes
 
@@ -144,23 +165,40 @@ Fire only on problems. Each returns findings or an empty array.
 | id                          | flags |
 |-----------------------------|-------|
 | `missing-description`       | Tool or parameter has no description. |
-| `large-enum`               | An enum with more than 20 values. |
-| `tool-overlap`             | Two tools in the same server with trigram similarity > 0.6. |
+| `large-enum`                | An enum with more than 20 values. |
+| `tool-overlap`              | Two tools in the same server with trigram similarity > 0.6. |
+| `deep-nesting`              | Schema nesting deeper than 3 levels (array `items` hops excluded). |
 
-Stop at these three. Do not add more without asking.
+Stop at these four. Do not add more without asking.
+
+Thresholds are provisional unless a distribution across the real fixtures
+justifies them. `deep-nesting` was cut once for lack of a distribution and
+reinstated when a larger sample produced one; `large-enum` has never fired on
+real data and is kept on the expectation that enum size has a tail. See the
+README for both arguments.
 
 ## Commands
 
+`dev` and `build` are not yet implemented — they depend on `apps/web/`.
+
 ```
-npm test            Vitest, watch mode off
-npm run ingest      Manual ingest. Writes data/servers/. Expect failures; log and continue.
-npm run dev         Next.js dev server
-npm run build       Static export to apps/web/out
+npm test                Vitest, watch mode off
+npm run ingest:discover Query the MCP registry. Writes data/registry-candidates.json for review.
+npm run ingest:capture  Capture only servers approved in scripts/ingest-approved.json. Writes packages/analyzer/fixtures/real/. Expect failures; each is logged and the batch continues.
+npm run dev             Next.js dev server
+npm run build           Static export to apps/web/out
 ```
 
 ## Definition of done
 
-- `npm test` passes with a test per rule.
+Analyzer (current):
+
+- `npm test` passes, with a synthetic test per rule and a real-fixture test for
+  every rule that fires on real data.
+- `npx tsc --noEmit -p packages/analyzer/tsconfig.json` is clean.
+- README leads with a real measured number from a real server.
+
+Site (not yet started):
+
 - `npm run build` produces a static export with no runtime data fetching.
 - Every server page states the tokenizer caveat.
-- README leads with a real measured number from a real server.
