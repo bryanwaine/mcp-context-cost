@@ -64,7 +64,6 @@ export interface Measurements {
 
 export type RuleId =
   | "missing-description"
-  | "description-restates-name"
   | "large-enum"
   | "tool-overlap";
 
@@ -78,10 +77,10 @@ export interface Finding {
   ruleId: RuleId;
   toolNames: string[]; // length 1 for every rule except tool-overlap, length 2 for tool-overlap
   path?: SchemaPath;
-  // Threshold rules (large-enum, description-restates-name,
-  // tool-overlap) populate measured/threshold: the value that crossed the
-  // line, and the line it crossed, same unit. missing-description is about
-  // absence, not a threshold crossing, and omits both.
+  // Threshold rules (large-enum, tool-overlap) populate measured/threshold:
+  // the value that crossed the line, and the line it crossed, same unit.
+  // missing-description is about absence, not a threshold crossing, and
+  // omits both.
   measured?: number;
   threshold?: number;
   // Tokens attributable to the flagged element, when the rule can attribute

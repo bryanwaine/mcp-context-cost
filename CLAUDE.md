@@ -144,11 +144,10 @@ Fire only on problems. Each returns findings or an empty array.
 | id                          | flags |
 |-----------------------------|-------|
 | `missing-description`       | Tool or parameter has no description. |
-| `description-restates-name` | Description adds nothing beyond the name. |
 | `large-enum`               | An enum with more than 20 values. |
 | `tool-overlap`             | Two tools in the same server with trigram similarity > 0.6. |
 
-Stop at these four. Do not add more without asking.
+Stop at these three. Do not add more without asking.
 
 ## Commands
 

@@ -16,7 +16,7 @@ Three servers, captured directly from their `tools/list` response:
 | `@modelcontextprotocol/server-filesystem` | 14 | 2,795 | 200 |
 | `@upstash/context7-mcp` | 2 | 1,052 | **525** |
 
-Connect all three and you have spent 7,848 tokens — about 3.9% of a 200k context window — before the model reads a single line of your actual problem.
+Connect all three and you have spent 7,854 tokens — about 3.93% of a 200k context window — before the model reads a single line of your actual problem.
 
 ### The two rankings invert
 
@@ -112,12 +112,12 @@ indexed.
 It was cut rather than shipped inert. If a future capture shows deeper
 schemas, the measurement is here to revisit.
 
-The remaining four rules are `missing-description`, `description-restates-name`,
-`large-enum`, and `tool-overlap`.
+The remaining three rules are `missing-description`, `large-enum`, and
+`tool-overlap`.
 
 ---
 
-### Why `large-enum` was kept
+## Why `large-enum` was kept
 
 `large-enum` fires above 20 values. The largest enum across the three captured
 servers is 5 (`browser_fill_form.fields.items.type`); seven of the eight enums
@@ -138,13 +138,43 @@ change rather than passing unnoticed.
 
 ---
 
+## A second rule cut
+
+`description-restates-name` was specified but never built. Trigram similarity
+between each tool's name and the first sentence of its description was measured
+across all three servers first:
+
+| Tool | Description opens | Score |
+|---|---|---:|
+| `browser_console_messages` | "Returns all console messages" | 0.625 |
+| `browser_resize` | "Resize the browser window" | 0.571 |
+| `create_directory` | "Create a new directory or ensure a directory exists..." | 0.491 |
+| `browser_close` | "Close the page" | 0.261 |
+| `browser_find` | "Search the accessibility snapshot..." | 0.000 |
+
+`browser_close` is a total restatement and scores below `create_directory`,
+whose description explains idempotency, nested creation, and silent success.
+`browser_find` scores zero against an informative paragraph — the right verdict
+for the wrong reason.
+
+The metric tracks description *length*, not informational overlap. Short
+descriptions score high whether or not they restate; long ones score low
+whether or not they do. The distribution is a smooth gradient from 0.000 to
+0.625 with correct classifications scattered across all of it, so no threshold
+separates them.
+
+Detecting this properly needs semantic comparison, not character overlap. That
+is a different project.
+
+---
+
 ## An open prediction
 
 Recorded before measuring, so it can be wrong.
 
 A widely-cited figure puts GitHub's official MCP server at 17,600 tokens of tool definitions per request. It comes from a vendor selling a tool-search product that reduces exactly this cost, so it deserves independent checking.
 
-At the ~196 tokens-per-tool average observed across the three servers here, 17,600 tokens implies roughly **90 tools**.
+Across the three servers here, 40 tools cost 7,854 tokens, or 196 per tool weighted by tool count. At that rate, 17,600 tokens implies roughly **90 tools**.
 
 If that holds, GitHub is a *scope* story, not a *bloat* story. The loudest
 number in the ecosystem would turn out to be evidence of surface area rather than waste, and the framing above predicted it.
@@ -161,17 +191,19 @@ Existing solutions to a similar problem:
 
 - **[mcp-checkup](https://github.com/yifanyifan897645/mcp-checkup)** — grades the servers in your local config, detects duplicates, emits an optimization report.
 
+- **[lean-ctx](https://github.com/yvgude/lean-ctx)** - intercepts the context your agent is trying to read and compresses on the fly
 
-It is an excellent tool and it is **post-install**: you point it at a server you have already decided to use.
+`mcp-checkup` is **post-install** analysis: you point it at a server you have already decided to use. `lean-ctx` is **runtime** mitigation: it reduces the cost while your agent is running.
 
-This project is **pre-install**. No installation, no local config, no CLI. You look a server up the way you look up a package on Bundlephobia, before committing
+ This project is neither — it is **pre-install**, so you can see the cost before connecting anything.
+ No installation, no local config, no CLI. You look a server up the way you look up a package on Bundlephobia, before committing
 to it.
 
 ---
 
 ## Status
 
-Early. Three servers measured, analyzer under construction.
+Three servers measured, analyzer complete (3 rules, 51 tests).
 
 - [x] Capture pipeline (`scripts/capture.ts`)
 - [x] Token counting validated against real fixtures
