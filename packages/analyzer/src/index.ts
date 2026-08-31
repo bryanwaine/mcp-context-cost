@@ -5,6 +5,8 @@ import { rules } from "./rules/index.js";
 
 export { clusterOverlaps } from "./cluster-overlaps.js";
 export type { OverlapCluster } from "./cluster-overlaps.js";
+export { describeCoverage } from "./describe-coverage.js";
+export type { CoverageSummary, ToolCoverage } from "./describe-coverage.js";
 
 export function analyze(tools: ToolDef[]): Report {
   const measurements = measure(tools);
