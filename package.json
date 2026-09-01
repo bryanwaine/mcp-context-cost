@@ -9,7 +9,9 @@
   "scripts": {
     "test": "vitest run",
     "ingest:discover": "tsx scripts/ingest-discover.ts",
-    "ingest:capture": "tsx scripts/ingest-capture.ts"
+    "ingest:capture": "tsx scripts/ingest-capture.ts",
+    "dev": "npm run dev --workspace apps/web",
+    "build": "npm run build --workspace packages/analyzer && npm run build --workspace apps/web"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",

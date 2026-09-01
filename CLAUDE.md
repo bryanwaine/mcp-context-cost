@@ -27,6 +27,8 @@ If a task seems to require one of the above, stop and ask instead of building it
 - Vitest for tests.
 - Next.js App Router with static export for the site. Tailwind for styling.
 - `gpt-tokenizer` for token counting (pure JS, runs in both Node and the browser).
+- `packages/analyzer` compiles to `dist/` via `tsc` and is consumed as an ordinary
+built package. It is not transpiled from source by the web app.
 - `@modelcontextprotocol/sdk` for the offline ingest script only.
 
 ## Repo layout
@@ -35,16 +37,15 @@ If a task seems to require one of the above, stop and ask instead of building it
 packages/analyzer/     Pure TypeScript. No I/O. Runs in the browser.
   src/rules/           One file per rule.
   src/index.ts         analyze(tools: ToolDef[]): Report
+  dist/                Build output, gitignored. `main` and `types` point here.
   fixtures/synthetic   Hand-written. One file per rule: the pathology plus a clean control. Used by rule unit tests.
   fixtures/real        Captured from live servers by scripts/capture.ts or scripts/ingest-capture.ts. Committed. Snapshot tests and site content only. Never rule unit tests.
 scripts/capture.ts           Run manually. Captures one named server by command line.
 scripts/ingest-discover.ts   Run manually. Queries the MCP registry, writes data/registry-candidates.json (gitignored, regenerated each run).
 scripts/ingest-approved.json Committed. Hand-edited list of registry candidates approved for capture — the only way scripts/ingest-capture.ts is allowed to run npx against a package.
 scripts/ingest-capture.ts    Run manually. Captures only servers listed in scripts/ingest-approved.json, writes packages/analyzer/fixtures/real/*.json
-apps/web/                    NOT YET CREATED. Next.js. Will read packages/analyzer/fixtures/real/ at build time.
+apps/web/                    Next.js, static export. Will read packages/analyzer/fixtures/real/ at build time.
 ```
-
-Everything above exists except `apps/web/`, which is the remaining piece of work.
 
 ## Hard rules
 
@@ -102,6 +103,12 @@ Everything above exists except `apps/web/`, which is the remaining piece of work
    Verification belongs in tests. If a check is worth running once, it is worth
    running on every `npm test`. Throwaway scripts go in the session scratchpad
    outside the repo.
+9. `packages/analyzer` is consumed as a built package (`main: dist/index.js`),
+   never as raw TypeScript. Do not add `transpilePackages`, bundler
+   `extensionAlias` config, or `--webpack` flags to make source imports work.
+   The analyzer's internal specifiers use the ESM `./foo.js` form; Turbopack
+   will not resolve those against `.ts` files, and every workaround for that
+   pins the project to a non-default bundler. Build the package instead.
 
 ## Domain notes
 
@@ -179,26 +186,25 @@ README for both arguments.
 
 ## Commands
 
-`dev` and `build` are not yet implemented — they depend on `apps/web/`.
-
 ```
 npm test                Vitest, watch mode off
 npm run ingest:discover Query the MCP registry. Writes data/registry-candidates.json for review.
 npm run ingest:capture  Capture only servers approved in scripts/ingest-approved.json. Writes packages/analyzer/fixtures/real/. Expect failures; each is logged and the batch continues.
 npm run dev             Next.js dev server
-npm run build           Static export to apps/web/out
+npm run build           Builds packages/analyzer to dist/, then static-exports apps/web to apps/web/out
 ```
 
 ## Definition of done
 
-Analyzer (current):
+Analyzer (done):
 
 - `npm test` passes, with a synthetic test per rule and a real-fixture test for
   every rule that fires on real data.
 - `npx tsc --noEmit -p packages/analyzer/tsconfig.json` is clean.
 - README leads with a real measured number from a real server.
 
-Site (not yet started):
+Site (current):
 
-- `npm run build` produces a static export with no runtime data fetching.
-- Every server page states the tokenizer caveat.
+- [x] `npm run build` produces a static export with no runtime data fetching.
+- [x] Every server page states the tokenizer caveat.
+- [ ] Index page and scatter plot.

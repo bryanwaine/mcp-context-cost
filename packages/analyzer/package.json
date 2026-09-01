@@ -2,7 +2,12 @@
   "name": "@mcp-context-cost/analyzer",
   "version": "0.0.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
   "dependencies": {
     "gpt-tokenizer": "^4.0.0"
   }
