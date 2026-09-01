@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --paper: #f6f7f5;
+  --ink: #1c2b26;
+  --rule: #d3d8d2;
+  --measure: #0b6e5f;
+  --flag: #7d2e3a;
+  --muted: #6b7671;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #14201c;
+    --ink: #e4eae6;
+    --rule: #2e3d37;
+    --measure: #45c4aa;
+    --flag: #e37b87;
+    --muted: #8d9a94;
+  }
+}
+/* Duplicates the media-query values above. An explicit choice must win over
+   the OS preference in both directions, which needs two selectors. Keep in sync. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #14201c;
+  --ink: #e4eae6;
+  --rule: #2e3d37;
+  --measure: #45c4aa;
+  --flag: #e37b87;
+  --muted: #8d9a94;
+}
+
+@theme {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-rule: var(--rule);
+  --color-measure: var(--measure);
+  --color-flag: var(--flag);
+  --color-muted: var(--muted);
+
+  --font-display: var(--display-font);
+  --font-sans: var(--body-font);
+  --font-mono: var(--mono-font);
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
