@@ -93,6 +93,8 @@ export default function IndexPage() {
         server costs. Average tokens per tool measures verbosity per tool
         instead, and the two rankings invert: a server can rank high on one
         and low on the other, since total is roughly their product.
+        
+        Click on each server to see its individual report, including the full tool list and the per-tool token counts.
       </p>
 
       <table className="mt-4 w-full border-collapse text-sm">
