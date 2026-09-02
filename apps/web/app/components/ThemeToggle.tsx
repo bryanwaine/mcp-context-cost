@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 type ThemePreference = "system" | "light" | "dark";
 
 const OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+  { value: "system", label: "sys" },
+  { value: "light", label: "☼" },
+  { value: "dark", label: "☾" },
 ];
 
 function applyPreference(preference: ThemePreference): void {

@@ -1,5 +1,15 @@
 node_modules
-data/registry-candidates.json
+node_modules/
+
+# build output
 .next/
 out/
 dist/
+
+# generated review artifacts
+data/registry-candidates.json
+
+# local env and editor state
+.env*.local
+.vercel
+.DS_Store
