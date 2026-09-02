@@ -111,7 +111,7 @@ export default async function ServerPage({
         <ul className="mt-2 space-y-1 text-sm">
           {clusters.map((cluster) => (
             <li key={cluster.toolNames.join(",")}>
-              {cluster.toolNames.join(", ")} overlap, {cluster.findingCount}{" "}
+              {cluster.toolNames.join(", ")} — overlap, {cluster.findingCount}{" "}
               finding
               {cluster.findingCount === 1 ? "" : "s"}, similarity{" "}
               <span className="text-flag">
