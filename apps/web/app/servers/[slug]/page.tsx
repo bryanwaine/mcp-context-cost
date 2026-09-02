@@ -8,6 +8,7 @@ import type {
   RuleId,
   TokenizerInfo,
 } from "@mcp-context-cost/analyzer";
+import Link from "next/link";
 import { listServerSlugs, loadServer } from "../../../lib/servers";
 import { ThemeToggle } from "../../components/ThemeToggle";
 
@@ -50,7 +51,13 @@ export default async function ServerPage({
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="flex items-center justify-end border-b border-rule pb-4">
+      <div className="flex items-center justify-between border-b border-rule pb-4">
+        <Link
+          href="/"
+          className="text-sm text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-measure"
+        >
+          ← All servers
+        </Link>
         <ThemeToggle />
       </div>
 
