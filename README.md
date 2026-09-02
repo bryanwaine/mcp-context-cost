@@ -4,6 +4,8 @@ Every MCP server you connect spends part of your context window before the agent
 
 This project measures that cost for published servers, so you can check it **before** you connect one.
 
+Live link - **[mcp-context-cost](https://mcp-context-cost.vercel.app/)**
+
 ---
 
 ## The measurement
@@ -277,7 +279,7 @@ Twelve servers measured, analyzer complete (4 rules, 70 tests), registry ingest 
 - [x] Token counting validated against real fixtures
 - [x] Analyzer rules
 - [x] Registry discovery and vetted capture
-- [ ] Static site
+- [x] Static site
 - [ ] Anthropic tokenizer error margin
 - [ ] GitHub capture
 
