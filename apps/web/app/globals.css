@@ -54,12 +54,18 @@ body {
 
 code {
   background-color: var(--rule);
-  padding: 0 0.4em;
+  padding: 0.1rem 0.4rem;
   border-radius: 0.4em;
+  font-size: 0.7rem;
 }
 
 pre > code {
   background-color: transparent;
   padding: 0;
-  border-radius: 0.4em;
+  border-radius: 0.4rem;
+}
+
+
+h1 > code {
+  font-size: 1.5rem;
 }

@@ -8,7 +8,7 @@ export default function PastePage() {
       <SiteHeader />
 
       <h1 className="mt-8 font-display text-3xl">
-        Paste a <code>tools/list</code> response
+        Paste a <code >tools/list</code> response
       </h1>
 
       <p className="mt-4 text-sm text-muted">
