@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { analyze } from "@mcp-context-cost/analyzer";
 import { listServerSlugs, loadServer } from "../lib/servers";
-import { ThemeToggle } from "./components/ThemeToggle";
+import { SiteHeader } from "./components/SiteHeader";
 import { ScatterPlot } from "./components/ScatterPlot";
 
 const CONTEXT_WINDOW_TOKENS = 200_000;
@@ -58,10 +58,7 @@ export default function IndexPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="flex items-center justify-between border-b border-rule pb-4">
-        <h1 className="font-display text-xl">mcp-context-cost</h1>
-        <ThemeToggle />
-      </div>
+      <SiteHeader />
 
       <p className="mt-6 text-sm text-muted">
         Context-window cost of {summaries.length} published MCP servers,

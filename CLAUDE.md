@@ -9,6 +9,10 @@ but for MCP servers instead of npm packages.
 Everything is precomputed offline and committed to the repo. The deployed site is
 static files. There is no server at request time.
 
+One exception, by design: the `/paste` page runs the analyzer in the visitor's
+browser on JSON they supply. That is still no server — the analysis is client-side
+and nothing is uploaded.
+
 ## Non-goals — do not build these
 
 - No database of any kind.
@@ -17,6 +21,10 @@ static files. There is no server at request time.
 - No LLM API calls anywhere in the codebase.
 - No composite "grade" or score out of 100. Report raw numbers only.
 - No executing arbitrary `npx` packages from the registry on the dev machine.
+- No measuring a server on demand from the site. A server's tool list only exists
+  once the server is running, so on-demand measurement means executing untrusted
+  code on request. `/paste` is the sanctioned alternative: the visitor runs the
+  server, and the browser analyses the output.
 
 If a task seems to require one of the above, stop and ask instead of building it.
 
@@ -25,33 +33,41 @@ If a task seems to require one of the above, stop and ask instead of building it
 - TypeScript, `strict: true`. No `any`, no `@ts-ignore`.
 - npm workspaces.
 - Vitest for tests.
-- Next.js App Router with static export for the site. Tailwind for styling.
+- Next.js App Router with static export. Tailwind v4 — tokens live in `@theme`
+  in CSS, there is no `tailwind.config.js`.
 - `gpt-tokenizer` for token counting (pure JS, runs in both Node and the browser).
+- `@modelcontextprotocol/sdk` for the offline capture and ingest scripts only.
 - `packages/analyzer` compiles to `dist/` via `tsc` and is consumed as an ordinary
-built package. It is not transpiled from source by the web app.
-- `@modelcontextprotocol/sdk` for the offline ingest script only.
+  built package. It is not transpiled from source by the web app.
 
 ## Repo layout
 
 ```
-packages/analyzer/     Pure TypeScript. No I/O. Runs in the browser.
+packages/analyzer/     Pure TypeScript. No I/O. Runs in Node and the browser.
   src/rules/           One file per rule.
-  src/index.ts         analyze(tools: ToolDef[]): Report
+  src/index.ts         analyze(tools: ToolDef[]): Report, plus the view functions
   dist/                Build output, gitignored. `main` and `types` point here.
   fixtures/synthetic   Hand-written. One file per rule: the pathology plus a clean control. Used by rule unit tests.
-  fixtures/real        Captured from live servers by scripts/capture.ts or scripts/ingest-capture.ts. Committed. Snapshot tests and site content only. Never rule unit tests.
-scripts/capture.ts           Run manually. Captures one named server by command line.
-scripts/ingest-discover.ts   Run manually. Queries the MCP registry, writes data/registry-candidates.json (gitignored, regenerated each run).
-scripts/ingest-approved.json Committed. Hand-edited list of registry candidates approved for capture — the only way scripts/ingest-capture.ts is allowed to run npx against a package.
-scripts/ingest-capture.ts    Run manually. Captures only servers listed in scripts/ingest-approved.json, writes packages/analyzer/fixtures/real/*.json
-apps/web/                    Next.js, static export. Will read packages/analyzer/fixtures/real/ at build time.
+  fixtures/real        Captured from live servers. Committed. Measurement tests, *.real.test.ts, and site content only. Never rule unit tests.
+
+scripts/capture.ts             Run manually. Captures one named server by command line.
+scripts/ingest-discover.ts     Run manually. Queries the MCP registry, writes data/registry-candidates.json (gitignored, regenerated each run).
+scripts/ingest-approved.json   Committed. Hand-edited list of registry candidates approved for capture — the only way scripts/ingest-capture.ts is allowed to run npx against a package.
+scripts/ingest-capture.ts      Run manually. Captures only servers listed in scripts/ingest-approved.json, writes packages/analyzer/fixtures/real/*.json
+scripts/build-search-index.ts  Run manually after a capture. Joins the registry dump to fixtures, writes apps/web/public/search-index.json (committed).
+
+apps/web/              Next.js, static export. Reads packages/analyzer/fixtures/real/ at build time.
+  app/                 Routes: / (index + scatter), /servers/[slug], /search, /paste
+  app/components/      ReportView (presentation only, type-only analyzer imports), ScatterPlot, ThemeToggle
+  lib/                 Build-time fs readers (server-only) and pure input parsing
+  public/              Committed search-index.json
 ```
 
 ## Hard rules
 
 1. `packages/analyzer` must never import `fs`, `node:*`, or make a network call.
-   It is bundled into the browser. Anything needing I/O belongs in `scripts/` or
-   in a Next.js build-time function.
+   It is bundled into the browser on the `/paste` page. Anything needing I/O
+   belongs in `scripts/` or in a Next.js build-time function.
 2. Every rule is a pure function `(ctx: RuleContext) => Finding[]`, exported from
    its own file in `src/rules/`, and registered in one array in
    `src/rules/index.ts`. Adding a rule must not require editing anything else.
@@ -87,9 +103,13 @@ apps/web/                    Next.js, static export. Will read packages/analyzer
    Numbers pinned in a `*.real.test.ts` must come from running the rule and
    reading the output, never from the README or from a previous plan. Quote the
    run in a comment above the assertions.
+
+   A red test run proves less than it looks like: the runner stops at the first
+   unresolved import, so a missing fixture can hide behind a missing rule. Confirm
+   the failure is the one you expected before writing the implementation.
 4. Never invent a method name on `@modelcontextprotocol/sdk`, and never invent a
-   registry API endpoint or response shape. Read the type definitions in
-   `node_modules/@modelcontextprotocol/sdk`, or ask me to paste the relevant docs.
+   registry API endpoint, tool invocation, or documentation URL. Read the type
+   definitions in `node_modules`, fetch the docs, or ask me to paste them.
    A guessed endpoint that returns 404 at 2am is the main way this project fails.
 5. Keep `packages/analyzer/fixtures/real/*.json` exactly as returned by the
    server. Do not reformat, sort, or strip fields during capture. Normalisation
@@ -109,6 +129,14 @@ apps/web/                    Next.js, static export. Will read packages/analyzer
    The analyzer's internal specifiers use the ESM `./foo.js` form; Turbopack
    will not resolve those against `.ts` files, and every workaround for that
    pins the project to a non-default bundler. Build the package instead.
+10. `apps/web/public/search-index.json` is committed and regenerated by hand with
+    `npm run build:index`. Do not chain it into `npm run build`: it derives from
+    `data/registry-candidates.json`, which is gitignored and absent on CI.
+    `scripts/build-search-index.test.ts` fails if it drifts from `fixtures/real/`.
+11. Any client component that imports from `@mcp-context-cost/analyzer` must use
+    `import()`, not a static import. The `o200k_base` encoding table is ~1MB
+    gzipped; a static import pulls it into that route's initial bundle. Type-only
+    imports are erased at build and are always safe.
 
 ## Domain notes
 
@@ -184,27 +212,45 @@ reinstated when a larger sample produced one; `large-enum` has never fired on
 real data and is kept on the expectation that enum size has a tail. See the
 README for both arguments.
 
+## View functions
+
+Not rules. Pure functions that reshape findings for display, exported from the
+analyzer but never called by `analyze()`. The caller opts in, the same way the UI
+computes a percentage from `contextWindowTokens` rather than the analyzer storing
+one.
+
+- `clusterOverlaps(findings)` — groups `tool-overlap` findings into connected
+  components. Connected components, not cliques: a tool joins a cluster via a
+  chain of pairwise overlaps without directly overlapping every member. On
+  antv-chart this turns 52 findings into 3 clusters.
+- `describeCoverage(findings, tools)` — turns `missing-description` findings into
+  a coverage ratio. Takes `tools` as a second argument because findings only
+  record misses; a fully documented server leaves no trace in them, so the
+  denominator cannot come from findings alone.
+
 ## Commands
 
 ```
 npm test                Vitest, watch mode off
 npm run ingest:discover Query the MCP registry. Writes data/registry-candidates.json for review.
 npm run ingest:capture  Capture only servers approved in scripts/ingest-approved.json. Writes packages/analyzer/fixtures/real/. Expect failures; each is logged and the batch continues.
+npm run build:index     Regenerate apps/web/public/search-index.json. Manual, after a capture.
 npm run dev             Next.js dev server
 npm run build           Builds packages/analyzer to dist/, then static-exports apps/web to apps/web/out
 ```
 
 ## Definition of done
 
-Analyzer (done):
+Analyzer:
 
-- `npm test` passes, with a synthetic test per rule and a real-fixture test for
-  every rule that fires on real data.
-- `npx tsc --noEmit -p packages/analyzer/tsconfig.json` is clean.
-- README leads with a real measured number from a real server.
+- [x] `npm test` passes, with a synthetic test per rule and a real-fixture test
+      for every rule that fires on real data.
+- [x] `npx tsc --noEmit -p packages/analyzer/tsconfig.json` is clean.
+- [x] README leads with a real measured number from a real server.
 
-Site (current):
+Site:
 
 - [x] `npm run build` produces a static export with no runtime data fetching.
-- [x] Every server page states the tokenizer caveat.
-- [ ] Index page and scatter plot.
+- [x] Every page showing a token count states the tokenizer caveat.
+- [x] Index page and scatter plot.
+- [x] Registry search and paste page.

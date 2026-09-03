@@ -1,0 +1,200 @@
+{
+  "tools": [
+    {
+      "name": "validate_identifier",
+      "title": "Check whether an identifier is mistyped",
+      "description": "Verify a number when you already know what it is supposed to be. Use this whenever someone gives you a product barcode (GTIN, UPC or EAN), a book number (ISBN-10 or ISBN-13), a vehicle VIN, a US healthcare provider NPI, a security ISIN, or a legal entity LEI, and acting on a wrong one would cost something: a bounced claim, a rejected listing, a record that quietly corrupts a dataset.\n\nEvery supported format is a public identifier. Bank accounts, IBANs, routing numbers and payment cards are not supported and must not be sent.\n\nReturns whether the checksum passes and, when it fails, the specific reason. If you do not already know the format, call identify_format first rather than guessing a `kind`, since a valid identifier checked against the wrong format comes back invalid. A passing checksum proves only that the digits are internally consistent: it does not mean the book, product, vehicle or provider exists, is active, or belongs to any particular person.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The identifier to check. Spaces and dashes are ignored."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "lei",
+              "isbn10",
+              "isbn13",
+              "gtin",
+              "vin",
+              "npi",
+              "isin"
+            ],
+            "description": "Which identifier format to validate against."
+          }
+        },
+        "required": [
+          "value",
+          "kind"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the check digit is arithmetically consistent."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "format",
+              "length",
+              "checksum"
+            ],
+            "description": "Bounded reason the check failed. Absent when valid."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable detail on the failure. Absent when valid."
+          },
+          "normalized": {
+            "type": "string",
+            "description": "The input with spaces and dashes removed, upper-cased."
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO country code parsed from the identifier. ISIN only."
+          },
+          "width": {
+            "type": "string",
+            "enum": [
+              "EAN-8",
+              "UPC-A",
+              "EAN-13",
+              "GTIN-14"
+            ],
+            "description": "The resolved width of a GTIN. GTIN input only."
+          },
+          "expectedCheckDigit": {
+            "type": "string",
+            "description": "The digit a VIN should carry at position 9. VIN only."
+          },
+          "actualCheckDigit": {
+            "type": "string",
+            "description": "The digit the VIN actually carries at position 9. VIN only."
+          }
+        },
+        "required": [
+          "valid"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "identify_format",
+      "title": "Work out what an unlabeled number is",
+      "description": "Identify a bare number whose type was never recorded. Tests it against every supported format and reports which ones its check digit satisfies. Use it for an unlabeled spreadsheet column, a value pulled out of a log line or a scanned document, or any number handed over without being named.\n\nReports every format that matches rather than choosing between them. Several matches is normal and does not mean the answer is unclear: some formats are subsets of others, so every ISBN-13 is also a valid EAN-13, and a short value can satisfy two unrelated formats by chance. Read one match as strong evidence and several as a set to narrow from context. As with validation, a match means the arithmetic is consistent, not that the identifier is registered or real.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The identifier to classify."
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "The normalized input that was tested."
+          },
+          "matched": {
+            "type": "boolean",
+            "description": "Whether any supported format matched."
+          },
+          "matches": {
+            "type": "array",
+            "description": "Every format whose check digit the input satisfies, in registry order. Each entry carries `kind` plus the same format-specific fields validate_identifier returns for that format, such as `country` for an ISIN or `width` for a GTIN. Only satisfied formats are listed, so no entry carries `code` or `reason`.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "lei",
+                    "isbn10",
+                    "isbn13",
+                    "gtin",
+                    "vin",
+                    "npi",
+                    "isin"
+                  ],
+                  "description": "The identifier format that matched. Pass this straight back to validate_identifier as its `kind`."
+                },
+                "valid": {
+                  "type": "boolean",
+                  "description": "Always true. Formats that failed are omitted, not listed as false."
+                }
+              },
+              "required": [
+                "kind",
+                "valid"
+              ]
+            }
+          }
+        },
+        "required": [
+          "input",
+          "matched",
+          "matches"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "compute_luhn_digit",
+      "title": "Complete a number that is missing its check digit",
+      "description": "Given digits with the final check digit omitted, return the one that completes them. US healthcare NPIs and securities ISINs use the Luhn formula.\n\nUse it to build valid test fixtures, to recover a last digit that was lost or illegible, or to check an implementation against a reference. To test a number you already have in full, use validate_identifier instead. Input must reduce to digits only once spaces and dashes are stripped; anything else is an error. Payment cards also use Luhn, and are deliberately out of scope here: do not pass card digits, partial or complete. This constructs a well-formed number and nothing more: it does not create, reserve or verify a real provider or security.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "partial": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Digits excluding the final check digit."
+          }
+        },
+        "required": [
+          "partial"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "partial": {
+            "type": "string",
+            "description": "The input digits, echoed back."
+          },
+          "checkDigit": {
+            "type": "string",
+            "description": "The single digit that completes a Luhn-valid string."
+          }
+        },
+        "required": [
+          "partial",
+          "checkDigit"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

@@ -52,7 +52,7 @@ export function ThemeToggle() {
             setPreference(value);
           }}
           aria-pressed={preference === value}
-          className={`px-3 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-measure ${
+          className={`px-2 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-measure ${
             preference === value ? "bg-ink text-paper" : "text-muted hover:text-ink"
           }`}
         >

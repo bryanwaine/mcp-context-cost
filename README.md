@@ -1,10 +1,22 @@
 # mcp-context-cost
 
+**Live at <https://mcp-context-cost.vercel.app>**
+
 Every MCP server you connect spends part of your context window before the agent does any work. The tool definitions have to be sent to the model on every single request, whether or not a tool is ever called.
 
 This project measures that cost for published servers, so you can check it **before** you connect one.
 
-Live link - **[mcp-context-cost](https://mcp-context-cost.vercel.app/)**
+---
+
+## The site
+
+Three things you can do with it.
+
+**Look up a measured server.** A page per server: total tokens, cost as a share of a 200k window, per-tool breakdown, and every finding the analyzer produced. The index page plots all twelve on two axes and ranks them by total cost.
+
+**Search the whole registry.** All 7,828 npm+stdio servers the official MCP registry lists, with the measured ones linked and the rest marked plainly as not yet measured. Coverage is stated on the page rather than implied.
+
+**Paste your own.** For private or unpublished servers. Paste a `tools/list` response and the analyzer runs in your browser — nothing is uploaded, and the same code that produced every number on the site produces yours.
 
 ---
 
@@ -61,8 +73,6 @@ Counting the whole object is deliberate. Anyone can recompute these numbers from
 
 **Data sources** — Captured from live servers and committed verbatim to `packages/analyzer/fixtures/real/`. Nothing is generated at request time. The raw JSON is in the repository, so any number here can be recomputed independently.
 
-One server was captured twice, by hand and through the registry pipeline. The two files are byte-identical.
-
 ---
 
 ## Limitations of the overlap rule
@@ -104,7 +114,13 @@ Real redundancy exists on that server: 27 tools that all draw a chart, where one
 
 All four filesystem cases above are pinned as assertions, including the false positive and the miss, so a future change to the metric or threshold has to confront them rather than quietly move past.
 
-Comparing descriptions or embeddings instead of names would address this. That is a v2 change, not a tuning change.
+### What the site does about it
+
+Fifty-two pairwise findings is not something a person reads. The site groups them into connected components before display, so antv-chart shows three clusters — a 14-member chart family, a 3-member map family, and a diagram pair — instead of 52 rows.
+
+That compression is also more honest than the raw findings. `generate_pie_chart` / `generate_venn_chart` is a false positive as a pair; "these 14 tools share a naming convention" is true. The noise lives at the pair level and the signal survives at the cluster level.
+
+Comparing descriptions or embeddings instead of names would address the underlying problem. That is a v2 change, not a tuning change.
 
 ---
 
@@ -192,16 +208,30 @@ It is kept rather than cut because the distributions differ in kind. Enum size p
 
 The zero result is pinned as an assertion, so the first server that trips it shows up as a deliberate change rather than passing unnoticed.
 
-### What `missing-description` found instead
+---
 
-The rule with the most real-world signal turned out to be the simplest one. Undocumented parameters are close to universal:
+## Documentation coverage
 
-- **filesystem**: 18 findings across 14 tools. Every tool has a description; almost no parameter does.
-- **mongodb**: every `connectionId`, `database`, and `collection` parameter across 27 tools, undescribed.
-- **firecrawl**: `firecrawl_scrape` alone has 44 undescribed parameters and nested properties.
-- **questdb**: every `buffer_id` and `cell_id` across the notebook tools.
+The rule with the most real-world signal turned out to be the simplest one. Every server measured documents its tools; almost none document their parameters.
 
-These are first-party servers from established vendors. The pattern is that authors document the tool surface and skip the schema.
+| Server | Tools documented | Parameters documented |
+|---|---:|---:|
+| mongodb | 27 / 27 | **0 / 96** |
+| firecrawl | 25 / 25 | 18 / 305 (6%) |
+| filesystem | 14 / 14 | 9 / 27 (33%) |
+| antv-chart | 27 / 27 | 283 / 359 (79%) |
+
+Not one of mongodb's 96 describable parameters carries a description. Firecrawl's `firecrawl_crawl` has 61 parameters and documents none of them.
+
+The pattern is consistent across unrelated first-party servers: authors document the tool surface and skip the schema.
+
+### And a third axis that doesn't correlate
+
+`@antv/mcp-server-chart` is the most expensive server measured, produces the most overlap noise, and is also **the best documented** at 79% parameter coverage. Mongodb is mid-range on cost and worst on documentation.
+
+Cost, redundancy and documentation quality are independent. A server can be terrible on one and excellent on another, which is the strongest evidence here that a composite score would have been actively misleading rather than merely uninformative.
+
+Because a flat list of 287 findings is unreadable, the site reports coverage as a ratio with a per-tool breakdown ordered worst-first, rather than one row per missing description.
 
 ---
 
@@ -213,18 +243,13 @@ A full traversal on the date of writing: **25,845 servers**, of which **7,826** 
 
 ### Publisher concentration
 
-The 7,826 npm+stdio entries come from 5,431 distinct publishers — an average of
-1.44 each, so most people publish one server. The concentration sits in a thin
-tail: the fifteen largest publishers account for 841 entries, about 11% of the
-catalog, led by 127, 125, and 95 servers from three accounts.
+Those 7,826 entries come from 5,431 distinct publishers — an average of 1.44 each, so most people publish one server. The concentration sits in a thin tail: the fifteen largest publishers account for 841 entries, about 11% of the catalogue, led by 127, 125 and 95 servers from three accounts.
 
-Registry size is therefore a reasonable proxy for how many people are building
-MCP servers, but a poorer one for how many distinct capabilities exist, since a
-single publisher's hundred entries are unlikely to be a hundred unrelated tools.
+Registry size is therefore a reasonable proxy for how many people are building MCP servers, but a poorer one for how many distinct capabilities exist.
 
 ### The reference implementations are not in it
 
-No `@modelcontextprotocol/*` package appears in the catalog, including `server-filesystem`, which is measured in this project and was captured directly from npm instead. Searching the registry for "filesystem" returns third-party forks and unrelated servers.
+No `@modelcontextprotocol/*` package appears in the catalogue, including `server-filesystem`, which is measured in this project and was captured directly from npm instead. Searching the registry for "filesystem" returns third-party forks and unrelated servers.
 
 ### "No required configuration" is a claim, not a fact
 
@@ -269,17 +294,21 @@ Existing solutions to a similar problem:
 
 This project is neither — it is **pre-install**, so you can see the cost before connecting anything. No installation, no local config, no CLI. You look a server up the way you look up a package on Bundlephobia, before committing to it.
 
+Measuring an arbitrary server on demand is not possible the way Bundlephobia measures an arbitrary npm package: a package is a static artifact you can inspect, whereas a server's tool list only exists once the server is running. That would mean executing untrusted code on request. The paste page is the honest equivalent — you run the server, and the analysis happens in your browser.
+
 ---
 
 ## Status
 
-Twelve servers measured, analyzer complete (4 rules, 107 tests), registry ingest pipeline working, static site up and running.
+Twelve servers measured, analyzer complete (4 rules, 120 tests), registry ingest pipeline working, site deployed.
 
 - [x] Capture pipeline
 - [x] Token counting validated against real fixtures
 - [x] Analyzer rules
 - [x] Registry discovery and vetted capture
-- [x] Static site
+- [x] Static site: index, scatter plot, per-server pages
+- [x] Registry search over all 7,828 servers
+- [x] Paste your own `tools/list`
 - [ ] Anthropic tokenizer error margin
 - [ ] GitHub capture
 
@@ -299,13 +328,17 @@ npm run ingest:discover          # writes data/registry-candidates.json for revi
 # edit scripts/ingest-approved.json by hand
 npm run ingest:capture           # expect failures; each is logged, the batch continues
 
+npm run build:index              # regenerate the committed search index after a capture
+
 npx tsx scripts/count.ts         # token counts for a captured fixture
 npm test
+npm run dev                      # site at localhost:3000
+npm run build                    # builds the analyzer, then static-exports to apps/web/out
 ```
 
 The repo is ESM (`"type": "module"` at the root). Config files must use `export default` or be named `.cjs`.
 
-`packages/analyzer` is pure TypeScript with no I/O — it is bundled into the browser. Anything touching the filesystem or network belongs in `scripts/`.
+`packages/analyzer` is pure TypeScript with no I/O. That constraint is what lets the same code run at build time for the twelve measured servers and in the browser on the paste page, unchanged.
 
 ---
 
