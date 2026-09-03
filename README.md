@@ -273,7 +273,7 @@ This project is neither — it is **pre-install**, so you can see the cost befor
 
 ## Status
 
-Twelve servers measured, analyzer complete (4 rules, 105 tests), registry ingest pipeline working, static site up and running.
+Twelve servers measured, analyzer complete (4 rules, 107 tests), registry ingest pipeline working, static site up and running.
 
 - [x] Capture pipeline
 - [x] Token counting validated against real fixtures
