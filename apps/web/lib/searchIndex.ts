@@ -10,6 +10,7 @@ const INDEX_PATH = join(HERE, "../public/search-index.json");
 export interface SearchIndexStats {
   total: number;
   measured: number;
+  orphans: number;
 }
 
 // Rows only need `slug` to compute the stats below — this deliberately
@@ -25,9 +26,12 @@ export function loadSearchIndexStats(): SearchIndexStats {
       "apps/web/public/search-index.json is missing or unreadable — run `npm run build:index`",
     );
   }
-  const rows = JSON.parse(raw) as { slug: string | null }[];
+   const rows = JSON.parse(raw) as { identifier: string; slug: string | null }[];
   const measuredSlugs = new Set(
     rows.map((r) => r.slug).filter((slug): slug is string => slug !== null),
   );
-  return { total: rows.length, measured: measuredSlugs.size };
+  // Fixtures captured by hand rather than through the registry pipeline: they
+  // carry a slug but no npm identifier, since no registry row matched them.
+  const orphans = rows.filter((r) => r.slug !== null && r.identifier === "").length;
+  return { total: rows.length, measured: measuredSlugs.size, orphans };
 }

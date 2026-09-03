@@ -3,7 +3,7 @@ import { SiteHeader } from "../components/SiteHeader";
 import { SearchClient } from "./SearchClient";
 
 export default function SearchPage() {
-  const { total, measured } = loadSearchIndexStats();
+  const { total, measured, orphans } = loadSearchIndexStats();
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -20,7 +20,7 @@ export default function SearchPage() {
         {measured} of {total.toLocaleString()} servers measured
       </p>
       <p className="mt-1 text-sm text-muted">
-        Two of the measured servers were captured directly from npm and do not
+        {orphans} of the measured servers were captured directly from npm and do not
         appear in the registry.
       </p>
 

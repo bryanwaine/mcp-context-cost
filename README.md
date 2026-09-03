@@ -28,6 +28,7 @@ Twelve servers, captured directly from their `tools/list` response, sorted by co
 |---|---:|---:|---:|
 | `@upstash/context7-mcp` | 2 | 1,052 | **526** |
 | `@antv/mcp-server-chart` | 27 | **14,021** | **519** |
+| `@toolstop/check-digits` | 3 | 1,250 | 417 |
 | `firecrawl-mcp` | 25 | 8,499 | 340 |
 | `next-devtools-mcp` | 4 | 1,317 | 329 |
 | `mongodb-mcp-server` | 27 | 7,877 | 292 |
@@ -39,7 +40,7 @@ Twelve servers, captured directly from their `tools/list` response, sorted by co
 | `@playwright/mcp` | 24 | 4,007 | 167 |
 | `@goreleaser/mcp` | 1 | 106 | 106 |
 
-207 tools, 57,739 tokens. Weighted by tool count, the average tool costs 279 tokens. The range is 106 to 14,021 for a whole server, and 106 to 526 per tool.
+210 tools, 58,989 tokens. Weighted by tool count, the average tool costs 281 tokens. The range is 106 to 14,021 for a whole server, and 106 to 526 per tool.
 
 ### Two independent axes
 
@@ -50,6 +51,8 @@ A server can be expensive because it is large, because it is verbose, or both. T
 **`@upstash/context7-mcp` is small but verbose.** Two tools carrying 526 tokens each — 3.1× playwright's per-tool cost, from a server that does one thing. Nothing about the capability requires that.
 
 **`@antv/mcp-server-chart` is both.** 27 tools at 519 tokens each: playwright's surface area at Context7's per-tool cost. It is the most expensive server measured, by a factor of 1.6 over the next one, and it is not a server anyone cites as expensive.
+
+The axes are genuinely independent, and the corpus took a while to show it. Every small server measured early was also cheap per tool — `@goreleaser/mcp` at 106, `@mapbox/mcp-docs-server` at 207 — so "few tools" and "lean" looked like the same property. `@toolstop/check-digits` breaks that: three tools at 417 tokens each, the third-highest per-tool cost measured, from a server that does one narrow thing. A server can be small and expensive, and until the thirteenth capture there was nothing in the data to prove it.
 
 The two rankings genuinely diverge. Sorted by total cost, `chrome-devtools-mcp` (5,593) beats `next-devtools-mcp` (1,317) by 4×. Sorted per tool, next-devtools is 70% more expensive. Neither ordering is wrong; they answer different questions.
 
@@ -273,11 +276,17 @@ Recorded before measuring, so it can be wrong.
 
 A widely-cited figure puts GitHub's official MCP server at 17,600 tokens of tool definitions per request. It comes from a vendor selling a tool-search product that reduces exactly this cost, so it deserves independent checking.
 
-The prediction was first recorded against three servers, where 40 tools cost 7,854 tokens — 196 per tool — implying **roughly 90 tools**.
+The prediction has been revised twice as the corpus grew. Each estimate is left in place rather than overwritten:
 
-That basis has since moved. Across twelve servers, 207 tools cost 57,739 tokens, or 279 per tool, which implies **roughly 63 tools**. The original estimate is left above rather than overwritten.
+| Basis | Tools | Tokens | Per tool | Implies |
+|---|---:|---:|---:|---:|
+| 3 servers | 40 | 7,854 | 196 | ~90 tools |
+| 12 servers | 207 | 57,739 | 279 | ~63 tools |
+| 13 servers | 210 | 58,989 | 281 | ~63 tools |
 
-The wider point is that the prediction is weaker than it looked. `@antv/mcp-server-chart` reaches 14,021 tokens from 27 tools. A server with 34 verbose tools would hit 17,600 just as easily as one with 90 lean ones, so the figure alone does not distinguish scope from bloat. What will distinguish them is GitHub's tool count, which is the thing to check.
+The first revision was substantial; the second barely moved. Three servers were not enough to estimate a per-tool average, and by twelve it had settled — adding a thirteenth changed it by two tokens. That is weak evidence the figure is now stable, and it will be tested again with every capture.
+
+The wider point is that the prediction is weaker than it looks regardless of its precision. `@antv/mcp-server-chart` reaches 14,021 tokens from 27 tools. A server with 34 verbose tools would hit 17,600 as easily as one with 90 lean ones, so the number alone does not distinguish scope from bloat. What distinguishes them is GitHub's tool count, which is the thing to check.
 
 The capture and the outcome will be added here unedited.
 
