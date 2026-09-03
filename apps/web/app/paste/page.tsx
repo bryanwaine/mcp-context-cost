@@ -65,16 +65,16 @@ export default function PastePage() {
       <pre className="mt-2 overflow-x-auto rounded border border-rule bg-paper px-3 py-2 font-mono text-sm text-ink">
         <code>
           npm i -g @your-org/your-server{"\n"}
-          npx @modelcontextprotocol/inspector --cli &lt;server-binary&gt; --method
-          tools/list --format json
+          npx @modelcontextprotocol/inspector --cli &lt;server-binary&gt;
+          --method tools/list --format json
         </code>
       </pre>
       <p className="mt-2 text-sm text-muted">
         Nesting <code className="font-mono">npx -y &lt;package&gt;</code> inside
         the inspector command doesn&rsquo;t work: the inspector passes its
         remaining arguments straight to whatever it spawns, so the nested{" "}
-        <code className="font-mono">npx</code> swallows the inspector&rsquo;s own{" "}
-        <code className="font-mono">--method</code> flag and the run fails.
+        <code className="font-mono">npx</code> swallows the inspector&rsquo;s
+        own <code className="font-mono">--method</code> flag and the run fails.
         Installing globally avoids the nested{" "}
         <code className="font-mono">npx</code> entirely.
       </p>
