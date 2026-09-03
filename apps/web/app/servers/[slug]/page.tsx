@@ -56,7 +56,7 @@ export default async function ServerPage({
           href="/"
           className="text-sm text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-measure"
         >
-          ← All servers
+          <span className="mr-2 font-bold">⬅</span> All servers
         </Link>
         <ThemeToggle />
       </div>

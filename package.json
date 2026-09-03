@@ -11,6 +11,7 @@
     "test": "vitest run",
     "ingest:discover": "tsx scripts/ingest-discover.ts",
     "ingest:capture": "tsx scripts/ingest-capture.ts",
+    "build:index": "tsx scripts/build-search-index.ts",
     "dev": "npm run dev --workspace apps/web",
     "build": "npm run build --workspace packages/analyzer && npm run build --workspace apps/web"
   },
