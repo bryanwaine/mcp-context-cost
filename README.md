@@ -22,7 +22,7 @@ Three things you can do with it.
 
 ## The measurement
 
-Twelve servers, captured directly from their `tools/list` response, sorted by cost per tool:
+13 servers, captured directly from their `tools/list` response, sorted by cost per tool:
 
 | Server | Tools | Total tokens | Tokens per tool |
 |---|---:|---:|---:|
