@@ -80,7 +80,7 @@ Counting the whole object is deliberate. Anyone can recompute these numbers from
 
 ## Limitations of the overlap rule
 
-`tool-overlap` compares tool names using Sørensen–Dice similarity over character trigrams, flagging pairs above 0.6. Across the twelve servers it produces well over a hundred findings, and most of them are wrong.
+`tool-overlap` compares tool names using Sørensen–Dice similarity over character trigrams, flagging pairs above 0.6. Across the 13 servers it produces well over a hundred findings, and most of them are wrong.
 
 It does find real duplicates:
 
